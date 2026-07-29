@@ -1,6 +1,6 @@
 #!/bin/sh
 # nexus-ai-hub.sh — AI Window status hub + launcher
-# Top pane of the AI window — shows tool status, handles key input
+# Top pane of the AI window — proxy status, tool status, key handler
 # NeXuS: Sane • Simple • Secure • Stealthy • Beautiful
 
 R='\033[0m'; BOLD='\033[1m'; DIM='\033[2m'
@@ -11,6 +11,9 @@ MAG='\033[38;5;177m'; ORG='\033[38;5;214m'; BLU='\033[38;5;33m'
     CYN="$C_PRIMARY" GRN="$C_SECONDARY" MAG="$C_TERTIARY" RED="$C_ERROR"
 
 # Paths
+PROXY_SCRIPT="$HOME/scripts/nexus-api-proxy.sh"
+WEB_ROOT="$HOME/nexus-web"
+PROXY_URL="https://localhost:8443"
 CLI_CHAR_GEN="$HOME/Projects/adv-cli-char-gen"
 CLI_CHAR_SCRIPT="$CLI_CHAR_GEN/incomplete-char-gen-enhanced-5k-v2.py"
 GUI_CHAR_GEN="$HOME/Projects/advanced-ai-character-generator-terminal-access"
@@ -24,9 +27,31 @@ _dot_path() { [ -f "$1" ] || [ -d "$1" ] && printf "${GRN}●${R}" || printf "${
 _dot_proc() { pgrep -f "$1" >/dev/null 2>&1 && printf "${GRN}●${R}" || printf "${GRY}●${R}"; }
 _count()    { ls "$1" 2>/dev/null | wc -l | tr -d ' '; }
 
+_proxy_running() { pgrep -f "nexus_web_server" >/dev/null 2>&1; }
+
+_proxy_dot() {
+    if _proxy_running; then
+        printf "${GRN}●${R}"
+    else
+        printf "${GRY}●${R}"
+    fi
+}
+
+_proxy_label() {
+    if _proxy_running; then
+        printf "${GRN}LIVE${R}  ${GRY}${PROXY_URL}${R}"
+    else
+        printf "${GRY}offline${R}  ${DIM}[p] to start${R}"
+    fi
+}
+
+_app_dot() {
+    # Check if a named app dir exists in the web root (real dir or symlink)
+    [ -e "${WEB_ROOT}/$1" ] && _proxy_running && printf "${GRN}●${R}" || printf "${GRY}●${R}"
+}
+
 _tool_row() {
-    # $1=key $2=name $3=status_dot $4=detail
-    printf "  ${CYN}${BOLD}[%s]${R}  %s  ${WHT}%-22s${R}  ${GRY}%s${R}\n" "$1" "$3" "$2" "$4"
+    printf "  ${CYN}${BOLD}[%s]${R}  %s  ${WHT}%-22s${R}  ${GRY}%s${R}\n" "$1" "$2" "$3" "$4"
 }
 
 draw() {
@@ -35,26 +60,35 @@ draw() {
     printf "\n  ${CYN}${BOLD}A I${R}  ${GRY}NeXuS Intelligence Hub  •  ${ts}${R}\n"
     printf "  ${GRY}────────────────────────────────────────────────────${R}\n\n"
 
-    # ── CHAT & REASONING ─────────────────────────────────────────
+    # ── PROXY STATUS ─────────────────────────────────────────────
+    printf "  ${MAG}${BOLD}NEXUS PROXY${R}  $(_proxy_dot)  $(_proxy_label)\n"
+    printf "\n"
+
+    # ── WEB APPS (proxy-served) ───────────────────────────────────
+    printf "  ${MAG}${BOLD}WEB APPS${R}\n"
+    _tool_row "w" "$(_app_dot manager)"  "Manager / Dashboard"  "${PROXY_URL}/manager/"
+    _tool_row "F" "$(_app_dot forge)"    "AI Forge"             "${PROXY_URL}/forge/"
+    _tool_row "G" "$(_app_dot chargen)"  "Char Gen (web)"       "${PROXY_URL}/chargen/"
+    _tool_row "O" "$(_app_dot foundry)"  "AI Foundry"           "${PROXY_URL}/foundry/"
+    _tool_row "C" "$(_app_dot charcard)" "Char Card Reader"     "${PROXY_URL}/charcard/"
+    printf "\n"
+
+    # ── INTERFACE ────────────────────────────────────────────────
     printf "  ${MAG}${BOLD}INTERFACE${R}\n"
-    _tool_row "c" "Chat (aichat)"       "$(_dot_path "$AICHAT")"  "quick AI chat — bottom pane always live"
-    _tool_row "t" "Think (chain reasoning)" "$(_dot_path "$AICHAT")" "step-by-step reasoning mode"
-    _tool_row "/" "Search"              "$(_dot_path "$AICHAT")"  "AI-powered doc + web search"
+    _tool_row "c" "$(_dot_path "$AICHAT")"  "Chat (aichat)"          "quick AI chat — bottom pane"
+    _tool_row "t" "$(_dot_path "$AICHAT")"  "Think (reasoning)"      "step-by-step mode"
+    _tool_row "/" "$(_dot_path "$AICHAT")"  "Search"                 "AI-powered doc + web search"
     printf "\n"
 
-    # ── IMAGE & MEDIA ─────────────────────────────────────────────
+    # ── MEDIA ────────────────────────────────────────────────────
     printf "  ${MAG}${BOLD}MEDIA${R}\n"
-    _tool_row "i" "Image Gen"           "$(_dot_path "$AICHAT")"  "generate images via aichat model"
-    _tool_row "u" "Doc Upload"          "$(_dot_path "$AICHAT")"  "ingest PDF/MD/TXT for context"
+    _tool_row "i" "$(_dot_path "$AICHAT")"  "Image Gen"              "generate images via aichat"
+    _tool_row "u" "$(_dot_path "$AICHAT")"  "Doc Upload"             "ingest PDF/MD/TXT for context"
     printf "\n"
 
-    # ── FORGE ────────────────────────────────────────────────────
-    printf "  ${MAG}${BOLD}FORGE${R}\n"
-    _tool_row "f" "CLI Char Gen"        "$(_dot_path "$CLI_CHAR_SCRIPT")" "terminal character creator"
-    forge_running=$(_dot_proc "vite\|ai-forge")
-    _tool_row "F" "AI Forge (GUI)"      "$forge_running"          "web UI: code + images + chat + vault"
-    gui_chars=$(_dot_proc "serve\|http-server.*${GUI_CHAR_GEN}")
-    _tool_row "G" "GUI Char Gen"        "$gui_chars"              "web character generator"
+    # ── FORGE (CLI) ───────────────────────────────────────────────
+    printf "  ${MAG}${BOLD}CLI FORGE${R}\n"
+    _tool_row "f" "$(_dot_path "$CLI_CHAR_SCRIPT")" "CLI Char Gen" "terminal character creator"
     printf "\n"
 
     # ── VAULT ────────────────────────────────────────────────────
@@ -64,18 +98,54 @@ draw() {
     av_count=$(_count "$VAULT_AVATARS")
     shadow_count=$([ -f "$HOME/Projects/adv-cli-char-gen/shadowvault.json" ] && \
         python3 -c "import json,sys; d=json.load(open('$HOME/Projects/adv-cli-char-gen/shadowvault.json')); print(len(d) if isinstance(d,list) else len(d.get('characters',d)))" 2>/dev/null || echo "?")
-    _tool_row "v" "Characters"          "$(_dot_path "$VAULT_CHARS")"    "${char_count} characters stored"
-    _tool_row "V" "Images"              "$(_dot_path "$VAULT_IMAGES")"   "${img_count} generated  •  ${av_count} avatars"
-    _tool_row "x" "Shadow Vault"        "$(_dot_path "$HOME/Projects/adv-cli-char-gen/shadowvault.json")" "${shadow_count} entries"
+    _tool_row "v" "$(_dot_path "$VAULT_CHARS")"    "Characters"       "${char_count} characters stored"
+    _tool_row "V" "$(_dot_path "$VAULT_IMAGES")"   "Images"           "${img_count} generated  •  ${av_count} avatars"
+    _tool_row "x" "$(_dot_path "$HOME/Projects/adv-cli-char-gen/shadowvault.json")" "Shadow Vault" "${shadow_count} entries"
     printf "\n"
 
     # ── FOOTER ───────────────────────────────────────────────────
     printf "  ${GRY}────────────────────────────────────────────────────${R}\n"
-    printf "  ${GRY}Press key to launch  •  [space] popup menu  •  [q] quit${R}\n\n"
+    printf "  ${GRY}[p] proxy start/stop  •  [space] popup  •  [q] quit${R}\n\n"
+}
+
+# ── Proxy open in w3m (in the WEB window's w3m pane if available) ──────
+_open_proxy_app() {
+    url="${PROXY_URL}${1}"
+    if ! _proxy_running; then
+        tmux display-message "Proxy not running — press [p] to start"
+        return
+    fi
+    # Try to reuse WEB window w3m pane, else open new window
+    if tmux list-windows -F '#W' 2>/dev/null | grep -q '^WEB$'; then
+        tmux select-window -t WEB
+        tmux select-pane -t "WEB.1" 2>/dev/null
+        tmux send-keys -t "WEB.1" "w3m -o ssl_verify_peer=0 '${url}'" Enter 2>/dev/null
+        tmux select-window -t AI
+    else
+        tmux new-window -n "PROXY" "w3m -o ssl_verify_peer=0 '${url}'"
+    fi
+}
+
+_toggle_proxy() {
+    if _proxy_running; then
+        tmux new-window -n "PROXY-CTL" "sh -c '
+            echo \"Stopping NeXuS proxy...\"
+            $PROXY_SCRIPT stop 2>/dev/null || pkill -f nexus_web_server
+            echo \"Stopped.\"
+            sleep 2
+        '"
+    else
+        tmux new-window -n "PROXY-CTL" "sh -c '
+            echo \"Starting NeXuS proxy...\"
+            $PROXY_SCRIPT start 2>/dev/null
+            echo \"Proxy started — ${PROXY_URL}\"
+            echo \"Press enter to close this window\"
+            read x
+        '"
+    fi
 }
 
 _open_chat() {
-    # Focus the chat pane (pane 1)
     tmux select-pane -t "AI.1" 2>/dev/null || \
     tmux new-window -n "CHAT" "$HOME/scripts/nexus-home-chat.sh"
 }
@@ -83,7 +153,6 @@ _open_chat() {
 _open_think() {
     tmux new-window -n "THINK" "sh -c '
         echo \"${CYN}Think Mode — step-by-step reasoning${R}\"
-        echo \"Model: reasoning (uses /think prefix)\"
         echo \"────────────────────────────────────\"
         printf \"> \"
         while IFS= read -r q; do
@@ -101,11 +170,9 @@ _open_search() {
         printf \"Query > \"
         while IFS= read -r q; do
             [ \"\$q\" = \"quit\" ] && break
-            # Search local wiki first
             echo \"${GRY}--- Local docs ---${R}\"
             grep -rl \"\$q\" $HOME/Documents/nexus-docs/docs/ 2>/dev/null | \
-                head -5 | while read f; do echo \"  $(basename \$f)\"; done
-            # AI answer
+                head -5 | while read f; do echo \"  \$(basename \$f)\"; done
             echo \"${GRY}--- AI ---${R}\"
             echo \"\$q\" | $AICHAT --no-stream 2>/dev/null
             printf \"Query > \"
@@ -117,11 +184,10 @@ _open_image_gen() {
     tmux new-window -n "IMGGEN" "sh -c '
         echo \"${CYN}Image Generation${R}\"
         echo \"────────────────────────────────\"
-        echo \"Uses aichat image model (set in ~/.config/aichat/config.yaml)\"
         printf \"Prompt > \"
         while IFS= read -r prompt; do
             [ \"\$prompt\" = \"quit\" ] && break
-            out=\"$HOME/.nexus/images/$(date +%Y%m%d-%H%M%S).png\"
+            out=\"$HOME/.nexus/images/\$(date +%Y%m%d-%H%M%S).png\"
             mkdir -p \"\$(dirname \$out)\"
             echo \"\$prompt\" | $AICHAT --no-stream 2>/dev/null
             printf \"Prompt > \"
@@ -154,45 +220,6 @@ _open_cli_char_gen() {
         return
     fi
     tmux new-window -n "CHARGEN" "cd $CLI_CHAR_GEN && python3 $CLI_CHAR_SCRIPT"
-}
-
-_open_ai_forge() {
-    if [ ! -f "$AI_FORGE/package.json" ]; then
-        tmux display-message "AI Forge not found: $AI_FORGE"
-        return
-    fi
-    tmux new-window -n "FORGE" "sh -c '
-        cd $AI_FORGE
-        echo \"Starting AI Forge...\"
-        npm run dev 2>&1 | tee /tmp/ai-forge.log &
-        sleep 3
-        echo \"Open: http://localhost:5173\"
-        echo \"Log: /tmp/ai-forge.log\"
-        tail -f /tmp/ai-forge.log
-    '"
-}
-
-_open_gui_char_gen() {
-    if [ ! -d "$GUI_CHAR_GEN" ]; then
-        tmux display-message "GUI Char Gen not found: $GUI_CHAR_GEN"
-        return
-    fi
-    tmux new-window -n "GUIGEN" "sh -c '
-        cd $GUI_CHAR_GEN
-        # Check for index.html or dist/index.html
-        if [ -f dist/index.html ]; then
-            echo \"Serving dist/index.html\"
-            python3 -m http.server 8899 -d dist &
-        elif [ -f index.html ]; then
-            python3 -m http.server 8899 &
-        else
-            echo \"Build first? Running npm...\"
-            npm run build 2>/dev/null && python3 -m http.server 8899 -d dist &
-        fi
-        sleep 1
-        echo \"Open: http://localhost:8899\"
-        wait
-    '"
 }
 
 _open_vault_chars() {
@@ -229,7 +256,6 @@ _open_vault_chars() {
 _open_vault_images() {
     tmux new-window -n "IMAGES" "sh -c '
         echo \"${CYN}Image Vault${R}\"
-        echo \"Generated: $(_count "$VAULT_IMAGES") images  •  Avatars: $(_count "$VAULT_AVATARS")\"
         echo \"────────────────────────────────\"
         all_imgs=\$(find $VAULT_IMAGES $VAULT_AVATARS $HOME/.nexus/images \
             -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.webp\" 2>/dev/null)
@@ -238,10 +264,9 @@ _open_vault_images() {
             sleep 3
             exit
         fi
-        # fzf with sixel preview if available, else just filename
         echo \"\$all_imgs\" | fzf \
             --prompt=\"Image > \" \
-            --preview=\"echo {} | head -1\" 2>/dev/null
+            --preview=\"echo {}\" 2>/dev/null
     '"
 }
 
@@ -287,14 +312,18 @@ while true; do
         key=$(dd bs=1 count=1 2>/dev/null | tr -d '\0')
         if [ -n "$key" ]; then
             case "$key" in
-                c|C)  _open_chat ;;
+                p|P)  _toggle_proxy ;;
+                w)    _open_proxy_app "/manager/" ;;
+                F)    _open_proxy_app "/forge/" ;;
+                G)    _open_proxy_app "/chargen/" ;;
+                O)    _open_proxy_app "/foundry/" ;;
+                C)    _open_proxy_app "/charcard/" ;;
+                c)    _open_chat ;;
                 t|T)  _open_think ;;
                 /)    _open_search ;;
                 i|I)  _open_image_gen ;;
                 u|U)  _open_doc_upload ;;
                 f)    _open_cli_char_gen ;;
-                F)    _open_ai_forge ;;
-                G)    _open_gui_char_gen ;;
                 v)    _open_vault_chars ;;
                 V)    _open_vault_images ;;
                 x|X)  _open_shadow_vault ;;
