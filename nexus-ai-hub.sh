@@ -327,7 +327,7 @@ while true; do
                 v)    _open_vault_chars ;;
                 V)    _open_vault_images ;;
                 x|X)  _open_shadow_vault ;;
-                ' ')  tmux display-popup -E -w 62 -h 26 "$HOME/scripts/nexus-home-popup.sh" ;;
+                ' ')  tmux display-popup -E -w 66 -h 38 "$HOME/scripts/nexus-home-popup.sh" ;;
                 q|Q)  exit 0 ;;
             esac
             break
