@@ -302,7 +302,7 @@ while true; do
         key=$(dd bs=1 count=1 2>/dev/null | tr -d '\0')
         if [ -n "$key" ]; then
             case "$key" in
-                ' ') tmux display-popup -E -w 66 -h 38 "$HOME/scripts/nexus-home-popup.sh"; break ;;
+                ' ') tmux display-popup -E -w 66 -h 30 "$HOME/scripts/nexus-home-popup.sh"; break ;;
                 s|S) tmux display-popup -E -w 66 -h 32 "$HOME/scripts/nexus-home-settings.sh"; break ;;
                 d|D) tmux new-window -n "DARKNET" "cd $HOME/claude/nexus-darknet-go && ./nexus-darknet tui"; break ;;
                 g|G) tmux new-window -n "GATE" "cd $HOME/claude/nexus-orchestrator && python nexus.py"; break ;;
