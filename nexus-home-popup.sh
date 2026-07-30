@@ -13,30 +13,38 @@ MAG='\033[38;5;177m'; ORG='\033[38;5;214m'
     CYN="$C_PRIMARY" GRN="$C_SECONDARY" MAG="$C_TERTIARY" RED="$C_ERROR"
 
 SCRIPTS="$HOME/scripts"
-DARKNET="$HOME/claude/nexus-darknet-go"
+DARKNET="$HOME/Projects/nexus-network-stack/network/configs/darknet-stack"
 ORCH="$HOME/claude/nexus-orchestrator"
 
 # Quick link definitions: "KEY|LABEL|DESCRIPTION|COMMAND"
 LINKS="
-d|DARKNET TUI|Full darknet control panel|cd $DARKNET && ./nexus-darknet tui
 a|AI HUB|Chat · think · forge · vault|$SCRIPTS/nexus-ai.sh
+H|AI HOME|Web char system · HTTPS :8443|w3m -o ssl_verify_peer=0 https://localhost:8443/
+p|PROXY|API Proxy status · start/stop|$SCRIPTS/nexus-api-proxy.sh status
+k|DASHBOARD|Proxy manager dashboard|w3m -o ssl_verify_peer=0 https://localhost:8443/manager/
+C|CHAR CARD|PNG² char card reader|w3m -o ssl_verify_peer=0 https://localhost:8443/charcard/
+O|OPEN CHARS|OpenCharacters web chat|w3m -o ssl_verify_peer=0 https://localhost:8443/oc/play.html
+x|AI PARTY|Character party via aichat|$HOME/claude/nexus-party/nexus-party.sh
+V|VM FORGE|QEMU/KVM VM maker TUI|$HOME/git/nexus-vm-forge/nexus-vm-forge.sh
+S|NXS SEARCH|Canonical file search :5000|w3m http://localhost:5000/
 M|MEDIA|Feeds · newsboat · IRC · ticker|$SCRIPTS/nexus-media.sh
 W|WEB|w3m · amfora · sacc · GUI browsers|$SCRIPTS/nexus-web.sh
 A|AUDIO/VIDEO|mpv · yt-dlp · ncmpcpp · VLC|$SCRIPTS/nexus-media-av.sh
-e|RETROSHARE|P2P mesh · friend certs · chat|$SCRIPTS/nexus-retroshare.sh
+d|DARKNET TUI|Full darknet control panel|cd $DARKNET && ./nexus-darknet menu
+j|DARKNET PANEL|Web control panel :8878|cd $DARKNET && python3 scripts/nexus-control-panel.py &; sleep 1; w3m http://localhost:8878/
+N|NET DOCTOR|Darknet diagnostics|cd $DARKNET && ./nexus-darknet doctor
+D|DARKNET PUB|Host .onion/.i2p sites|$SCRIPTS/nexus-darknet-publish.sh
 g|GHOST GATE|Issue permits & view audit log|cd $ORCH && python nexus.py
-o|ORCHESTRATOR|NeXuS command center|cd $ORCH && python nexus.py
+e|RETROSHARE|P2P mesh · friend certs · chat|$SCRIPTS/nexus-retroshare.sh
+f|FORGE|Digital goods · sell via darknet|$SCRIPTS/nexus-forge.sh
 l|AUDIT LOG|Live ghost gate event stream|tail -f $HOME/.nexus/audit.log
 m|MONITOR|System resource monitor|htop
 w|WIKI|Local docs (mkdocs serve)|cd $HOME/Documents/nexus-docs && mkdocs serve
-t|TOR LOG|Live Tor bootstrap & circuits|tail -f $HOME/.local/share/tor/tor.log
-i|I2P LOG|I2P tunnel status|tail -f $HOME/.nexus-security/i2p2/i2pd.log
+n|NOTES|NeXuS notes (micro + glow)|ls $HOME/notes/nexus/ | fzf | xargs -I{} micro $HOME/notes/nexus/{}
 r|RSS FEEDS|Quick feed pane|$SCRIPTS/nexus-media-feeds.sh
 P|PUBLISH|Write · publish to wiki/IPFS/net|$SCRIPTS/nexus-media-write.sh
-f|FORGE|Digital goods · sell via darknet|$SCRIPTS/nexus-forge.sh
-R|RETROSHARE|P2P mesh · friend certificates|$SCRIPTS/nexus-retroshare.sh hub
-D|DARKNET PUB|Host .onion/.i2p sites|$SCRIPTS/nexus-darknet-publish.sh
-n|NOTES|NeXuS notes (micro + glow)|ls $HOME/notes/nexus/ | fzf | xargs -I{} micro $HOME/notes/nexus/{}
+t|TOR LOG|Live Tor bootstrap & circuits|tail -f $HOME/.local/share/tor/tor.log
+i|I2P LOG|I2P tunnel status|tail -f $HOME/.nexus-security/i2p2/i2pd.log
 "
 
 _header() {
@@ -59,8 +67,8 @@ _footer() {
 
 _launch() {
     key="$1"
-    cmd=$(echo "$LINKS" | grep -v '^\s*$' | awk -F'|' -v k="$key" 'tolower($1)==tolower(k){print $5}' | head -1)
-    label=$(echo "$LINKS" | grep -v '^\s*$' | awk -F'|' -v k="$key" 'tolower($1)==tolower(k){print $2}' | head -1)
+    cmd=$(echo "$LINKS" | grep -v '^\s*$' | awk -F'|' -v k="$key" '$1==k{print $5}' | head -1)
+    label=$(echo "$LINKS" | grep -v '^\s*$' | awk -F'|' -v k="$key" '$1==k{print $2}' | head -1)
     [ -z "$cmd" ] && return 1
     tmux new-window -n "$label" "sh -c '$cmd; echo; echo Done — press Enter; read x'"
     return 0

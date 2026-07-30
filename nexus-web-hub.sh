@@ -20,6 +20,17 @@ touch "$CLIP_LOG" "$BOOKMARKS" 2>/dev/null
 
 _in_gui()    { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; }
 _tor_up()    { ss -tln 2>/dev/null | grep -q ':9050' && TOR_RUNNING=1 || TOR_RUNNING=0; }
+_proxy_dot() { pgrep -f nexus_web_server >/dev/null 2>&1 && printf "${GRN}●${R}" || printf "${GRY}●${R}"; }
+
+_open_proxy() {
+    url="$1"
+    if tmux list-windows -F '#W' 2>/dev/null | grep -q '^WEB$'; then
+        tmux select-pane -t "WEB.1" 2>/dev/null
+        tmux send-keys -t "WEB.1" "w3m -o ssl_verify_peer=0 '${url}'" Enter 2>/dev/null
+    else
+        tmux new-window -n "PROXY" "w3m -o ssl_verify_peer=0 '${url}'"
+    fi
+}
 
 # ── GUI browser picker ─────────────────────────────────────────────────
 _gui_browsers() {
@@ -276,7 +287,10 @@ _draw() {
     printf "  ${CYN}[/]${R}  Search           ${CYN}[u]${R}  Open URL\n"
     printf "  ${CYN}[k]${R}  Clip a URL        ${CYN}[K]${R}  View clips\n"
     printf "  ${CYN}[b]${R}  Add bookmark      ${CYN}[B]${R}  Browse bookmarks\n"
-    printf "  ${MAG}[H]${R}  HTTPS Portal      ${GRY}(localhost:8443)${R}\n"
+    printf "\n  ${MAG}${BOLD}NEXUS PROXY${R}  $(_proxy_dot)  ${GRY}localhost:8443${R}\n"
+    printf "  ${MAG}[H]${R}  AI Home           ${MAG}[P]${R}  Manager/Dashboard\n"
+    printf "  ${MAG}[O]${R}  OpenCharacters    ${MAG}[C]${R}  Char Card Reader\n"
+    printf "  ${CYN}[S]${R}  NXS Search        ${GRY}(localhost:5000)${R}\n"
     printf "  ${MAG}[D]${R}  Darknet Dashboard ${GRY}(localhost:8800)${R}\n"
     if _in_gui; then
         printf "\n"
@@ -316,7 +330,12 @@ while true; do
         K)   _clip_view ;;
         b)   _bookmark_add ;;
         B)   _bookmarks_view ;;
-        H)   "$SCRIPTS/nexus-serve.sh" open ;;
+        H)   _open_proxy "https://localhost:8443/" ;;
+        P)   _open_proxy "https://localhost:8443/manager/" ;;
+        O)   _open_proxy "https://localhost:8443/oc/play.html" ;;
+        C)   _open_proxy "https://localhost:8443/charcard/" ;;
+        S)   tmux select-pane -t "WEB.1" 2>/dev/null
+             tmux send-keys -t "WEB.1" "w3m 'http://localhost:5000/'" Enter 2>/dev/null ;;
         D)   _darknet_dash ;;
         # GUI browser direct launches
         M)   _in_gui && { printf "  Opening Mullvad...\n"; _launch_gui M; sleep 1; } ;;

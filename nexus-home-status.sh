@@ -245,6 +245,13 @@ while true; do
 
     # Services
     printf "  ${BOLD}${WHT}SERVICES${R}\n"
+    # Inline service checks for non-script processes
+    _proxy_st()   { pgrep -f nexus_web_server >/dev/null 2>&1 && echo "RUNNING" || echo "STOPPED"; }
+    _search_st()  { curl -s --max-time 1 http://localhost:5000/ -o /dev/null 2>/dev/null && echo "RUNNING" || echo "STOPPED"; }
+    _panel_st()   { curl -s --max-time 1 http://localhost:8878/ -o /dev/null 2>/dev/null && echo "RUNNING" || echo "STOPPED"; }
+    printf "  $(_dot $(_proxy_st))  %-14s  ${GRY}:8443 API proxy${R}\n"  "NeXuS Proxy"
+    printf "  $(_dot $(_search_st)) %-14s  ${GRY}:5000 file search${R}\n" "NXS Search"
+    printf "  $(_dot $(_panel_st))  %-14s  ${GRY}:8878 darknet panel${R}\n" "Darknet Panel"
     for svc_pair in \
         "Ghost Gate:nexus-ghostgate.sh:gg" \
         "Tor:nexus-tor.sh" \
