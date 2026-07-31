@@ -91,7 +91,7 @@ _draw() {
 _launch() {
     key="$1"
     cmd=$(printf '%s\n%s' "$LINKS1" "$LINKS2" \
-        | grep -v '^\s*$' | awk -F'|' -v k="$key" '$1==k{print $5}' | head -1)
+        | grep -v '^\s*$' | awk -F'|' -v k="$key" '$1==k{print $4}' | head -1)
     label=$(printf '%s\n%s' "$LINKS1" "$LINKS2" \
         | grep -v '^\s*$' | awk -F'|' -v k="$key" '$1==k{print $2}' | head -1)
     [ -z "$cmd" ] && return 1
