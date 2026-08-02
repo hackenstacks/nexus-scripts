@@ -240,30 +240,21 @@ _bookmarks_view() {
     [ -n "$url" ] && _open_url_direct "$url"
 }
 
-# ── Darknet dashboard (Go web interface port 8800) ─────────────────────
+# ── Command Center (FastAPI :8800) + Darknet Panel (Flask :8878) ──────
 _darknet_dash() {
-    DARKNET="$HOME/claude/nexus-darknet-go"
-    BINARY="$DARKNET/nexus-darknet"
-    PID_FILE="/tmp/nexus-darknet-serve.pid"
+    CMD_CENTER="$HOME/Projects/nexus-network-stack/command-center"
+    PID_FILE="/tmp/nexus-cmd-center.pid"
 
-    # Build if needed
-    if [ ! -x "$BINARY" ]; then
-        printf "  ${YLW}Building nexus-darknet...${R}\n"
-        (cd "$DARKNET" && go build -o nexus-darknet . 2>/dev/null)
-    fi
-
-    # Start serve if not running
-    if [ ! -f "$PID_FILE" ] || ! kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-        nohup "$BINARY" serve --port 8800 >/tmp/nexus-darknet-serve.log 2>&1 &
-        echo $! > "$PID_FILE"
-        sleep 1
-        printf "  ${GRN}● Darknet dashboard started${R}\n"
+    # Start Command Center if not running
+    if ! ss -tln 2>/dev/null | grep -q ":8800[^0-9]"; then
+        tmux new-window -n "CMD-CTR" "sh -c 'cd $CMD_CENTER && python3 main.py; echo; echo \"[Done — press Enter]\"; read x'"
+        sleep 2
     fi
 
     # Open in w3m
-    if [ -n "$TMUX" ]; then
-        tmux select-pane -t "WEB.1" 2>/dev/null && \
-            tmux send-keys -t "WEB.1" "w3m http://localhost:8800/" Enter 2>/dev/null
+    if tmux list-windows -F '#W' 2>/dev/null | grep -q '^WEB$'; then
+        tmux select-pane -t "WEB.1" 2>/dev/null
+        tmux send-keys -t "WEB.1" "w3m http://localhost:8800/" Enter 2>/dev/null
     fi
 }
 

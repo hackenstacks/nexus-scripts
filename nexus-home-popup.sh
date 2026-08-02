@@ -17,24 +17,25 @@ ORCH="$HOME/claude/nexus-orchestrator"
 
 # ── Page 1: AI · Proxy · Web ─────────────────────────────────────────
 LINKS1="
+h|APPS HUB|All web frontends · live status|$SCRIPTS/nexus-apps.sh
 a|AI HUB|Chat · think · forge · vault|$SCRIPTS/nexus-ai.sh
 H|AI HOME|Web char system · HTTPS :8443|w3m -o ssl_verify_peer=0 https://localhost:8443/
 p|PROXY|API Proxy status · start/stop|$SCRIPTS/nexus-api-proxy.sh status
 k|DASHBOARD|Proxy manager dashboard|w3m -o ssl_verify_peer=0 https://localhost:8443/manager/
 C|CHAR CARD|PNG² char card reader|w3m -o ssl_verify_peer=0 https://localhost:8443/charcard/
 O|OPEN CHARS|OpenCharacters web chat|w3m -o ssl_verify_peer=0 https://localhost:8443/oc/play.html
+Y|AI FOUNDRY|Model foundry|w3m -o ssl_verify_peer=0 https://localhost:8443/foundry/
 x|AI PARTY|Character party via aichat|$HOME/claude/nexus-party/nexus-party.sh
 V|VM FORGE|QEMU/KVM VM maker TUI|$HOME/git/nexus-vm-forge/nexus-vm-forge.sh
 S|NXS SEARCH|Canonical file search :5000|w3m http://localhost:5000/
-M|MEDIA|Feeds · newsboat · IRC · ticker|$SCRIPTS/nexus-media.sh
 W|WEB|w3m · amfora · sacc · GUI browsers|$SCRIPTS/nexus-web.sh
-A|AUDIO|mpv · yt-dlp · ncmpcpp · VLC|$SCRIPTS/nexus-media-av.sh
 "
 
 # ── Page 2: Darknet · Security · Tools ───────────────────────────────
 LINKS2="
+L|APP ARSENAL|CLI inventory + launcher :8080|w3m http://localhost:8080/
 d|DARKNET TUI|Full darknet control panel|cd $DARKNET && ./nexus-darknet menu
-j|DARKNET PANEL|Web control panel :8878|cd $DARKNET && python3 scripts/nexus-control-panel.py & sleep 1; w3m http://localhost:8878/
+j|DARKNET PANEL|Web control panel :8878|cd $DARKNET && ./nexus-darknet panel & sleep 2; w3m http://localhost:8878/
 N|NET DOCTOR|Darknet diagnostics|cd $DARKNET && ./nexus-darknet doctor
 D|DARKNET PUB|Host .onion/.i2p sites|$SCRIPTS/nexus-darknet-publish.sh
 g|GHOST GATE|Issue permits & view audit log|cd $ORCH && python nexus.py
@@ -55,7 +56,7 @@ _draw_cheatsheet() {
     clear
     printf "\n  ${CYN}${BOLD}QUICK LAUNCH${R}  ${GRY}3/3  tmux reference${R}\n"
     printf "  ${GRY}────────────────────────────────────────────${R}\n\n"
-    printf "  ${GRY}PREFIX = Ctrl+Space${R}\n\n"
+    printf "  ${GRY}PREFIX = Ctrl+A${R}\n\n"
     printf "  ${MAG}${BOLD}SESSIONS${R}\n"
     printf "  ${CYN}\$${R}  Rename   ${CYN}s${R}  List/switch   ${CYN}d${R}  Detach\n\n"
     printf "  ${MAG}${BOLD}WINDOWS${R}\n"

@@ -105,7 +105,7 @@ draw() {
 
     # ── FOOTER ───────────────────────────────────────────────────
     printf "  ${GRY}────────────────────────────────────────────────────${R}\n"
-    printf "  ${GRY}[p] proxy start/stop  •  [space] popup  •  [q] quit${R}\n\n"
+    printf "  ${GRY}[p] proxy  •  [h] apps hub  •  [space] popup  •  [q] quit${R}\n\n"
 }
 
 # ── Proxy open in w3m (in the WEB window's w3m pane if available) ──────
@@ -327,7 +327,8 @@ while true; do
                 v)    _open_vault_chars ;;
                 V)    _open_vault_images ;;
                 x|X)  _open_shadow_vault ;;
-                ' ')  tmux display-popup -E -w 66 -h 30 "$HOME/scripts/nexus-home-popup.sh" ;;
+                ' ')  tmux display-popup -E -w 66 -h 32 "$HOME/scripts/nexus-home-popup.sh" ;;
+                h|H)  "$HOME/scripts/nexus-apps.sh" ;;
                 q|Q)  exit 0 ;;
             esac
             break
